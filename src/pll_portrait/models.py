@@ -63,6 +63,7 @@ class SRFPLL(System):
         self.unbalance_factor = unbalance_factor
         self.__C1 = kp * positive_sequence_amplitude / frequency
         self.__C2 = ki * positive_sequence_amplitude / frequency**2
+        self.max_step = 0.1
 
     def __call__(self, time, state):
         x, y = state
