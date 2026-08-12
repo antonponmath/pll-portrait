@@ -1,14 +1,14 @@
-from dataclasses import dataclass
-
 from numpy.typing import ArrayLike
 from scipy.integrate import solve_ivp
 
 
-@dataclass(frozen=True, slots=True, kw_only=True)
 class SimulationResult:
-    times: ArrayLike
-    states: ArrayLike
-    converged: bool
+    __slots__ = ("converged", "states", "times")
+
+    def __init__(self, *, times, states, converged):
+        self.times = times
+        self.states = states
+        self.converged = converged
 
 
 def simulate(system, tmax, initial_state):
