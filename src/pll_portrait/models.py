@@ -41,7 +41,7 @@ class LinearPendulum(System):
 
 
 class SRFPLL(System):
-    """SRF-PLL under unbalanced voltage"""
+    """SRF-PLL under unbalanced voltage in normalized time"""
 
     __slots__ = (
         "__C1",
@@ -67,7 +67,7 @@ class SRFPLL(System):
 
     def __call__(self, time, state):
         x, y = state
-        mu = sqrt(1 + 2 * self.unbalance_factor * cos(time) + self.unbalance_factor**2)
+        mu = sqrt(1 + 2 * self.unbalance_factor * cos(2*time) + self.unbalance_factor**2)
         F = 1 - (1 - self.unbalance_factor**2) / mu**2
         dx = -self.__C1 * mu * sin(x) + y + F
         dy = -self.__C2 * mu * sin(x)
