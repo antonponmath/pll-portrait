@@ -105,20 +105,20 @@ class ComparisonSRFPLL(ForcedSRFPLL):
     __slots__ = (
         "__C1",
         "__C2",
+        "__left_right_sign",
         "__mu_max",
         "__mu_min",
         "__z_bottom",
         "__z_minus",
         "__z_plus",
         "__z_top",
-        "__left_right_sign",
     )
 
     def __init__(
         self,
         *,
         kp=1,
-        ki=10000,
+        ki=1000,
         frequency=2 * pi * 50,
         positive_sequence_amplitude=200,
         unbalance_factor=0.1,
@@ -142,16 +142,16 @@ class ComparisonSRFPLL(ForcedSRFPLL):
         self.__z_plus = 2 * unbalance_factor / (1 - unbalance_factor)
         self.__z_top = 2 * (1 + 2 * unbalance_factor) / (1 - unbalance_factor)
         self.__z_bottom = 2 * (1 - 2 * unbalance_factor) / (1 + unbalance_factor)
-        self.__mu_min = 1 / (1 + unbalance_factor)
-        self.__mu_max = 1 / (1 - unbalance_factor)
+        self.__mu_min = 1 - unbalance_factor
+        self.__mu_max = 1 + unbalance_factor
         self.max_step = 0.1
 
     def __call__(self, _time, state):
         b, z = state
         if self.__left_right_sign * sin(b) < 0:
             G = min(
-                (z - self.__z_minus) * self.__mu_min,
-                (z - self.__z_plus) * self.__mu_max,
+                (z - self.__z_minus) / self.__mu_max,
+                (z - self.__z_plus) / self.__mu_min,
             )
         else:
             if z >= self.__z_top:
@@ -159,7 +159,7 @@ class ComparisonSRFPLL(ForcedSRFPLL):
             elif z < self.__z_bottom:
                 G = (z - self.__z_minus) * self.__mu_min
             else:
-                G = 2 / 3 * sqrt((z + 1) ** 3 / (3 * (1 - self.unbalance_factor**2)))
+                G = 2 / 3 * sqrt((z + 1) ** 3 / 3 / (1 - self.unbalance_factor**2))
         db = -self.__C1 * sin(b) + G
         dz = -self.__C2 * sin(b)
         return [db, dz]
