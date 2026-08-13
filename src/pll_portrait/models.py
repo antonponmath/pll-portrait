@@ -56,7 +56,7 @@ class VanDerPol(System):
         return [dx, dy]
 
 
-class SRFPLL(System):
+class ForcedSRFPLL(System):
     """SRF-PLL under unbalanced voltage in normalized time"""
 
     __slots__ = (
@@ -89,15 +89,77 @@ class SRFPLL(System):
         self.forcing_period = pi
 
     def __call__(self, time, state):
-        x, y = state
+        b, z = state
         mu = sqrt(
             1 + 2 * self.unbalance_factor * cos(2 * time) + self.unbalance_factor**2
         )
         F = 1 - (1 - self.unbalance_factor**2) / mu**2
-        dx = -self.__C1 * mu * sin(x) + y + F
-        dy = -self.__C2 * mu * sin(x)
-        return [dx, dy]
+        db = -self.__C1 * mu * sin(b) + z + F
+        dz = -self.__C2 * mu * sin(b)
+        return [db, dz]
 
 
-class ComparisonSRFPLL(SRFPLL):
+class ComparisonSRFPLL(ForcedSRFPLL):
     """Comparison system for the SRF-PLL under unbalanced voltage."""
+
+    __slots__ = (
+        "__C1",
+        "__C2",
+        "__mu_max",
+        "__mu_min",
+        "__z_bottom",
+        "__z_minus",
+        "__z_plus",
+        "__z_top",
+        "__left_right_sign",
+    )
+
+    def __init__(
+        self,
+        *,
+        kp=1,
+        ki=10000,
+        frequency=2 * pi * 50,
+        positive_sequence_amplitude=200,
+        unbalance_factor=0.1,
+        left_or_right="left",
+    ):
+        self.kp = kp
+        self.ki = ki
+        self.frequency = frequency
+        self.positive_sequence_amplitude = positive_sequence_amplitude
+        self.unbalance_factor = unbalance_factor
+        match left_or_right:
+            case "left":
+                self.__left_right_sign = 1
+            case "right":
+                self.__left_right_sign = -1
+            case _:
+                raise ValueError("Comparison system must be left or right.")
+        self.__C1 = kp * positive_sequence_amplitude / frequency
+        self.__C2 = ki * positive_sequence_amplitude / frequency**2
+        self.__z_minus = -2 * unbalance_factor / (1 + unbalance_factor)
+        self.__z_plus = 2 * unbalance_factor / (1 - unbalance_factor)
+        self.__z_top = 2 * (1 + 2 * unbalance_factor) / (1 - unbalance_factor)
+        self.__z_bottom = 2 * (1 - 2 * unbalance_factor) / (1 + unbalance_factor)
+        self.__mu_min = 1 / (1 + unbalance_factor)
+        self.__mu_max = 1 / (1 - unbalance_factor)
+        self.max_step = 0.1
+
+    def __call__(self, _time, state):
+        b, z = state
+        if self.__left_right_sign * sin(b) < 0:
+            G = min(
+                (z - self.__z_minus) * self.__mu_min,
+                (z - self.__z_plus) * self.__mu_max,
+            )
+        else:
+            if z >= self.__z_top:
+                G = (z - self.__z_plus) * self.__mu_max
+            elif z < self.__z_bottom:
+                G = (z - self.__z_minus) * self.__mu_min
+            else:
+                G = 2 / 3 * sqrt((z + 1) ** 3 / (3 * (1 - self.unbalance_factor**2)))
+        db = -self.__C1 * sin(b) + G
+        dz = -self.__C2 * sin(b)
+        return [db, dz]
