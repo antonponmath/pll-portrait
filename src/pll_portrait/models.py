@@ -2,7 +2,7 @@ from math import pi, sin, cos, sqrt
 
 
 class System:
-    __slots__ = ("max_step",)
+    __slots__ = ("forcing_period", "max_step")
 
     def __call__(self, time, state):
         raise NotImplementedError(
@@ -64,10 +64,13 @@ class SRFPLL(System):
         self.__C1 = kp * positive_sequence_amplitude / frequency
         self.__C2 = ki * positive_sequence_amplitude / frequency**2
         self.max_step = 0.1
+        self.forcing_period = pi
 
     def __call__(self, time, state):
         x, y = state
-        mu = sqrt(1 + 2 * self.unbalance_factor * cos(2*time) + self.unbalance_factor**2)
+        mu = sqrt(
+            1 + 2 * self.unbalance_factor * cos(2 * time) + self.unbalance_factor**2
+        )
         F = 1 - (1 - self.unbalance_factor**2) / mu**2
         dx = -self.__C1 * mu * sin(x) + y + F
         dy = -self.__C2 * mu * sin(x)
