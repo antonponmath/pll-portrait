@@ -2,7 +2,7 @@ from math import pi, sin, cos, sqrt
 
 
 class System:
-    __slots__ = ("max_step",)
+    __slots__ = ("forcing_period", "max_step")
 
     def __call__(self, time, state):
         raise NotImplementedError(
@@ -18,7 +18,7 @@ class LinearPendulum(System):
         "stiffness",
     )
 
-    def __init__(self, *, stiffness, damping):
+    def __init__(self, *, stiffness=1.0, damping=1.0):
         self.stiffness = stiffness
         self.damping = damping
         D = damping**2 - 4 * stiffness  # discriminant
@@ -40,6 +40,22 @@ class LinearPendulum(System):
         return [dx, dy]
 
 
+class VanDerPol(System):
+    """Van der Pol oscillator for testing."""
+
+    __slots__ = "damping"
+
+    def __init__(self, *, damping=1.0):
+        self.damping = damping
+        self.max_step = 2 * pi / 100
+
+    def __call__(self, _time, state):
+        x, y = state
+        dx = y
+        dy = self.damping * (1 - x**2) * y - x
+        return [dx, dy]
+
+
 class SRFPLL(System):
     """SRF-PLL under unbalanced voltage in normalized time"""
 
@@ -54,7 +70,13 @@ class SRFPLL(System):
     )
 
     def __init__(
-        self, *, kp, ki, frequency, positive_sequence_amplitude, unbalance_factor
+        self,
+        *,
+        kp=1,
+        ki=1000,
+        frequency=2 * pi * 50,
+        positive_sequence_amplitude=200,
+        unbalance_factor=0.1,
     ):
         self.kp = kp
         self.ki = ki
@@ -64,10 +86,13 @@ class SRFPLL(System):
         self.__C1 = kp * positive_sequence_amplitude / frequency
         self.__C2 = ki * positive_sequence_amplitude / frequency**2
         self.max_step = 0.1
+        self.forcing_period = pi
 
     def __call__(self, time, state):
         x, y = state
-        mu = sqrt(1 + 2 * self.unbalance_factor * cos(2*time) + self.unbalance_factor**2)
+        mu = sqrt(
+            1 + 2 * self.unbalance_factor * cos(2 * time) + self.unbalance_factor**2
+        )
         F = 1 - (1 - self.unbalance_factor**2) / mu**2
         dx = -self.__C1 * mu * sin(x) + y + F
         dy = -self.__C2 * mu * sin(x)
