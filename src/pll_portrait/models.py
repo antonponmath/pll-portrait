@@ -40,6 +40,22 @@ class LinearPendulum(System):
         return [dx, dy]
 
 
+class VanDerPol(System):
+    """Van der Pol oscillator for testing."""
+
+    __slots__ = "damping"
+
+    def __init__(self, *, damping):
+        self.damping = damping
+        self.max_step = 2 * pi / 100
+
+    def __call__(self, _time, state):
+        x, y = state
+        dx = y
+        dy = self.damping * (1 - x**2) * y - x
+        return [dx, dy]
+
+
 class SRFPLL(System):
     """SRF-PLL under unbalanced voltage in normalized time"""
 
