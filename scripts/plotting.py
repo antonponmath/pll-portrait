@@ -1,4 +1,5 @@
 from math import pi, sqrt
+import numpy as np
 
 from matplotlib import pyplot as plt
 
@@ -16,10 +17,16 @@ def main():
         positive_sequence_amplitude=200,
         unbalance_factor=0.1,
     )
-    result = simulate(system, tmax=30, initial_state=[0, 1])
+    result = simulate(system, tmax=100, initial_state=[0, 1])
+
+    # resample
+    t_final = 20.0
+    t_step = system.max_step
+    times = np.arange(0.0, t_final + t_step, t_step)
+    states = result.solution.sol(times)
 
     _, ax = plt.subplots()
-    ax.plot(result.states[0, :], result.states[1, :], color="black", linewidth=2)
+    ax.plot(states[0, :], states[1, :], color="black", linewidth=2)
 
     plt.show()
 
