@@ -18,7 +18,7 @@ class LinearPendulum(System):
         "stiffness",
     )
 
-    def __init__(self, *, stiffness, damping):
+    def __init__(self, *, stiffness=1.0, damping=1.0):
         self.stiffness = stiffness
         self.damping = damping
         D = damping**2 - 4 * stiffness  # discriminant
@@ -45,7 +45,7 @@ class VanDerPol(System):
 
     __slots__ = "damping"
 
-    def __init__(self, *, damping):
+    def __init__(self, *, damping=1.0):
         self.damping = damping
         self.max_step = 2 * pi / 100
 
@@ -70,7 +70,13 @@ class SRFPLL(System):
     )
 
     def __init__(
-        self, *, kp, ki, frequency, positive_sequence_amplitude, unbalance_factor
+        self,
+        *,
+        kp=1,
+        ki=1000,
+        frequency=2 * pi * 50,
+        positive_sequence_amplitude=200,
+        unbalance_factor=0.1,
     ):
         self.kp = kp
         self.ki = ki
