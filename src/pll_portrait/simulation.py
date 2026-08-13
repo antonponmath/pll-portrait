@@ -1,6 +1,7 @@
-from scipy.integrate import solve_ivp
+from math import pi
+
 from numpy import linalg as LA
-import numpy as np
+from scipy.integrate import solve_ivp
 
 
 class SimulationResult:
@@ -18,12 +19,32 @@ def crossing_upward(_t, y):
 crossing_upward.direction = +1
 
 
-def simulate(system, t_final, initial_state, cycle_tolerance=0.01):
+def simulate(
+    system,
+    t_final,
+    initial_state,
+    cycle_tolerance=0.01,
+    escape_bounds=(-pi, pi),
+):
     is_forced = hasattr(system, "forcing_period")
+
     if cycle_tolerance is None or is_forced:
-        events = None
+        events = []
     else:
-        events = crossing_upward
+        events = [crossing_upward]
+
+    if escape_bounds is not None:
+
+        def escape_event_left(_t, y):
+            return y[0] - escape_bounds[0]
+
+        def escape_event_right(_t, y):
+            return y[0] - escape_bounds[1]
+
+        escape_event_left.terminal = True
+        escape_event_right.terminal = True
+        events.append(escape_event_left)
+        events.append(escape_event_right)
 
     solution = solve_ivp(
         fun=system,
