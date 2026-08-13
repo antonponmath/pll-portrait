@@ -12,9 +12,10 @@ def main():
     system = VanDerPol()
     # system = SRFPLL()
 
-    t_final = 20.0
+    t_max = 20.0
     initial_state = [0.0, 1.0]
-    result = simulate(system, t_final=t_final, initial_state=initial_state)
+    result = simulate(system, t_final=t_max, initial_state=initial_state)
+    t_final = result.solution.t[-1]
 
     traj_times = np.arange(0.0, t_final + system.max_step, system.max_step)
     traj_states = result.solution.sol(traj_times)
