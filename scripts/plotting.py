@@ -8,20 +8,12 @@ from pll_portrait.simulation import simulate
 
 
 def main():
-    # system = LinearPendulum(stiffness=1, damping=1)
-
-    system = VanDerPol(damping=1)
-
-    # system = SRFPLL(
-    #     kp=1,
-    #     ki=1000,
-    #     frequency=2 * pi * 50,
-    #     positive_sequence_amplitude=200,
-    #     unbalance_factor=0.1,
-    # )
+    # system = LinearPendulum()
+    system = VanDerPol()
+    # system = SRFPLL()
 
     t_final = 20.0
-    initial_state = [0, 1]
+    initial_state = [0.0, 1.0]
     result = simulate(system, t_final=t_final, initial_state=initial_state)
 
     traj_times = np.arange(0.0, t_final + system.max_step, system.max_step)

@@ -1,5 +1,6 @@
 from scipy.integrate import solve_ivp
 from numpy import linalg as LA
+import numpy as np
 
 
 class SimulationResult:
@@ -10,21 +11,43 @@ class SimulationResult:
         self.cycle_times = cycle_times
 
 
+def crossing_upward(_t, y):
+    return y[1]
+
+
+crossing_upward.direction = +1
+
+
 def simulate(system, t_final, initial_state, cycle_tolerance=0.01):
+    is_forced = hasattr(system, "forcing_period")
+    if cycle_tolerance is None or is_forced:
+        events = None
+    else:
+        events = crossing_upward
+
     solution = solve_ivp(
         fun=system,
         t_span=(0.0, t_final + system.max_step),
         y0=initial_state,
+        events=events,
         dense_output=True,
     )
 
     cycle_times = None
-    if hasattr(system, "forcing_period"):
+    if is_forced:
         t1 = t_final - system.forcing_period
         t2 = t_final
         y1 = solution.sol(t1)
         y2 = solution.sol(t2)
         if LA.norm(y1 - y2) < cycle_tolerance:
             cycle_times = (t1, t2)
+    else:
+        crossing_times = solution.t_events[0]
+        crossing_states = solution.y_events[0]
+        if (
+            len(crossing_times) > 1
+            and abs(crossing_states[-1, 0] - crossing_states[-2, 0]) < cycle_tolerance
+        ):
+            cycle_times = crossing_times[-2:]
 
     return SimulationResult(solution=solution, cycle_times=cycle_times)
