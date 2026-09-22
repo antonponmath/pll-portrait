@@ -1,6 +1,7 @@
 from math import pi
 
 import numpy as np
+import matplotlib
 from matplotlib import pyplot as plt
 
 from pll_portrait.models import (
@@ -12,6 +13,7 @@ from pll_portrait.models import (
 from pll_portrait.simulation import simulate
 
 EPS = 0.001
+
 
 def main():
     # system = LinearPendulum()
@@ -156,10 +158,13 @@ def main():
         markeredgecolor="black",
     )
 
-    ax.set(
-        xlim=xlim * np.array([-1, 1]),
-        ylim=ylim * np.array([-1, 1]),
-    )
+    ax.set_xlim(xlim * np.array([-1, 1]))
+    ax.set_ylim(ylim * np.array([-1, 1]))
+    ax.set_xticks([-pi, 0, pi], labels=["$-\\pi$", "0", "$\\pi$"], usetex=True, size=12)
+    ax.set_yticks(np.linspace(-ylim, ylim, 7), labels=[])
+    ax.set_box_aspect(1)
+    # ax.set_xlabel("phase error", family='serif', size=12)
+    # ax.set_ylabel("frequency error", family='serif', size=12)
     ax.grid()
     plt.show()
 
