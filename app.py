@@ -20,7 +20,7 @@ def draw(unbalance_factor):
 
 st.title("Portrait of SRF-PLL")
 
-unbalance_factor_percent = st.slider("Unbalance factor (%)", 0, 20, 1)
+unbalance_factor_percent = st.slider("Unbalance factor (%)", 0, 30, 1)
 
 # if st.button("Draw"):
 fig = draw(unbalance_factor_percent / 100.0)

@@ -110,7 +110,7 @@ def draw_comparison_portrait(system_left, system_right, t_max, axes):
         axes.fill(
             estimation.cycle[0, :],
             estimation.cycle[1, :],
-            FILL_GREEN,
+            "white",
         )
 
     # sample locked-in trajectory
@@ -126,19 +126,19 @@ def draw_comparison_portrait(system_left, system_right, t_max, axes):
         axes.plot(
             estimation.cycle[0, :],
             estimation.cycle[1, :],
-            color=GREEN,
+            color=BLUE,
             linewidth=2,
         )
 
     # stationary points
-    axes.plot(
-        [0.0, 0.0],
-        [system_left.z_minus, system_left.z_plus],
-        linestyle="",
-        marker="o",
-        markersize=4,
-        color="black",
-    )
+    # axes.plot(
+    #     [0.0, 0.0],
+    #     [system_left.z_minus, system_left.z_plus],
+    #     linestyle="",
+    #     marker="o",
+    #     markersize=4,
+    #     color="black",
+    # )
     axes.plot(
         [-pi, -pi, pi, pi],
         [
