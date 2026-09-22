@@ -5,6 +5,7 @@ from pll_portrait.drawing import draw_comparison_portrait
 from pll_portrait.models import ComparisonSRFPLL
 
 
+@st.cache_data
 def draw(unbalance_factor):
     fig, ax = plt.subplots(figsize=[5, 5])
     draw_comparison_portrait(
