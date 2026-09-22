@@ -89,7 +89,31 @@ def main():
             linewidth=2,
         )
 
-    # ax.plot(initial_state[0], initial_state[1], marker="o", color="black")
+    ax.plot(
+        [0.0, 0.0],
+        [comparison_left.z_minus, comparison_left.z_plus],
+        linestyle="",
+        marker="o",
+        color="black",
+    )
+    ax.plot(
+        [-pi, -pi, pi, pi],
+        [
+            comparison_left.z_minus,
+            comparison_left.z_plus,
+            comparison_left.z_minus,
+            comparison_left.z_plus,
+        ],
+        linestyle="",
+        marker="o",
+        markerfacecolor="white",
+        markeredgecolor="black",
+    )
+
+    ax.set(
+        xlim=1.1 * pi * np.array([-1, 1]),
+        ylim=1.1 * min(exclusion_lower.trajectory[1, :]) * np.array([1, -1]),
+    )
     ax.grid()
     plt.show()
 
