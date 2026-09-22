@@ -21,38 +21,38 @@ def main():
     comparison_left = ComparisonSRFPLL(left_or_right="left", unbalance_factor=0.15)
     comparison_right = ComparisonSRFPLL(left_or_right="right", unbalance_factor=0.15)
 
-    t_max = 50
+    T = 30  # maximal integration time
 
     exclusion_upper = simulate(
         comparison_right,
-        t_max=-t_max,
+        t_max=-T,
         initial_state=[pi - EPS, comparison_left.z_plus + EPS],
     )
     exclusion_lower = simulate(
         comparison_right,
-        t_max=-t_max,
+        t_max=-T,
         initial_state=[-pi + EPS, comparison_left.z_minus - EPS],
     )
     lockin_upper = simulate(
         comparison_left,
-        t_max=-t_max,
+        t_max=-T,
         initial_state=[pi - EPS, comparison_left.z_minus + EPS],
     )
     lockin_lower = simulate(
         comparison_left,
-        t_max=-t_max,
+        t_max=-T,
         initial_state=[-pi + EPS, comparison_left.z_plus - EPS],
     )
     estimation = simulate(
         comparison_left,
-        t_max=t_max,
+        t_max=T,
         initial_state=[-pi + EPS, lockin_lower.trajectory[1, -1] / 2.0]
         if lockin_lower.trajectory[1, -1] > 0
         else [-pi + EPS, lockin_upper.trajectory[1, -1] / 2.0],
     )
 
     _, ax = plt.subplots()
-    xlim = 1.1 * pi
+    xlim = 1.15 * pi
     ylim = -1.1 * min(exclusion_lower.trajectory[1, :])
 
     for xshift in [-2 * pi, 0, 2 * pi]:
@@ -171,7 +171,9 @@ def main():
     )
     ax.set_xlim(xlim * np.array([-1, 1]))
     ax.set_ylim(ylim * np.array([-1, 1]))
-    ax.set_xticks([-pi, 0, pi], labels=["$-\\pi$", "0", "$\\pi$"], usetex=True, size=12)
+    ax.set_xticks(
+        [-pi, 0, pi], labels=["$-\\pi$", "$0$", "$\\pi$"], usetex=True, size=12
+    )
     ax.set_yticks(np.linspace(-ylim, ylim, 7), labels=[])
     ax.set_box_aspect(1)
     # ax.set_xlabel("phase error", family='serif', size=12)
