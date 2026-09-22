@@ -6,11 +6,12 @@ from scipy.integrate import solve_ivp
 
 
 class SimulationResult:
-    __slots__ = ("cycle", "solution", "trajectory")
+    __slots__ = ("cycle", "escaped", "solution", "trajectory")
 
-    def __init__(self, *, solution, trajectory, cycle):
+    def __init__(self, *, solution, trajectory, escaped, cycle):
         self.solution = solution
         self.trajectory = trajectory
+        self.escaped = escaped
         self.cycle = cycle
 
 
@@ -67,12 +68,12 @@ def simulate(
     trajectory_times = time_range(0, t_final)
     trajectory = solution.sol(trajectory_times)
 
+    escaped = False
     cycle = None
     if escape_bounds is not None and (
         len(solution.t_events[-2]) > 0 or len(solution.t_events[-1]) > 0
     ):
-        # escaped
-        cycle = None
+        escaped = True
     elif is_forced:
         # check if there is a cycle at forcing period
         t1 = t_final - copysign(system.forcing_period, t_final)
@@ -90,4 +91,6 @@ def simulate(
             cycle_times = time_range(t[-2], t[-1])
             cycle = solution.sol(cycle_times)
 
-    return SimulationResult(solution=solution, trajectory=trajectory, cycle=cycle)
+    return SimulationResult(
+        solution=solution, trajectory=trajectory, escaped=escaped, cycle=cycle
+    )

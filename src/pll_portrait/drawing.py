@@ -37,19 +37,30 @@ def draw_comparison_portrait(system_left, system_right, t_max, axes):
         t_max=-t_max,
         initial_state=[-pi + EPS, system_left.z_plus - EPS],
     )
-    estimation = simulate(
-        system_left,
-        t_max=t_max,
-        initial_state=[-pi + EPS, lockin_lower.trajectory[1, -1] / 2.0]
-        if lockin_lower.trajectory[1, -1] > 0
-        else [-pi + EPS, lockin_upper.trajectory[1, -1] / 2.0],
-    )
+
+    lockin_wrapped = lockin_lower.escaped and lockin_lower.trajectory[0, -1] < 0
+    lockin_cycled = not lockin_lower.escaped
+
+    if not lockin_cycled:
+        estimation = simulate(
+            system_left,
+            t_max=t_max,
+            initial_state=[
+                -pi + EPS,
+                (lockin_lower.trajectory[1, -1] + system_left.z_plus) / 2.0,
+            ]
+            if lockin_wrapped
+            else [
+                -pi + EPS,
+                (lockin_upper.trajectory[1, -1] + system_left.z_plus) / 2.0,
+            ],
+        )
 
     xlim = 1.15 * pi
     ylim = -1.2 * min(slipping_lower.trajectory[1, :])
 
     for xshift in [-2 * pi, 0, 2 * pi]:
-        # exclusion region fill
+        # slipping region fill
         axes.fill(
             np.append(slipping_lower.trajectory[0, :], [pi, -pi]) + xshift,
             np.append(slipping_lower.trajectory[1, :], [-ylim, -ylim]),
@@ -76,19 +87,20 @@ def draw_comparison_portrait(system_left, system_right, t_max, axes):
         )
 
         # lock-in domain fill
-        if lockin_lower.trajectory[0, -1] > 0:
-            axes.fill(
-                np.append(lockin_lower.trajectory[0, :], lockin_upper.trajectory[0, :])
-                + xshift,
-                np.append(lockin_lower.trajectory[1, :], lockin_upper.trajectory[1, :]),
-                FILL_BLUE,
-            )
-        else:
-            axes.fill(
-                lockin_lower.trajectory[0, :] + xshift,
-                lockin_lower.trajectory[1, :],
-                FILL_BLUE,
-            )
+        if not lockin_cycled:
+            if lockin_wrapped:
+                axes.fill(
+                    lockin_lower.trajectory[0, :] + xshift,
+                    lockin_lower.trajectory[1, :],
+                    FILL_BLUE,
+                )
+            else:
+                axes.fill(
+                    np.append(lockin_lower.trajectory[0, :], lockin_upper.trajectory[0, :])
+                    + xshift,
+                    np.append(lockin_lower.trajectory[1, :], lockin_upper.trajectory[1, :]),
+                    FILL_BLUE,
+                )
 
         # lock-in domain bounds
         axes.plot(
@@ -96,7 +108,7 @@ def draw_comparison_portrait(system_left, system_right, t_max, axes):
             lockin_upper.trajectory[1, :],
             color=BLUE,
             linewidth=2,
-            linestyle="-" if lockin_lower.trajectory[0, -1] > 0 else ":",
+            linestyle=":" if lockin_wrapped or lockin_cycled else "-",
         )
         axes.plot(
             lockin_lower.trajectory[0, :] + xshift,
@@ -105,24 +117,22 @@ def draw_comparison_portrait(system_left, system_right, t_max, axes):
             linewidth=2,
         )
 
-    # oscillation fill
-    if estimation.cycle is not None:
+    # sample locked-in trajectory
+    if not lockin_cycled:
+        axes.plot(
+            estimation.trajectory[0, :],
+            estimation.trajectory[1, :],
+            color=LINE_BLUE,
+            linewidth=1,
+        )
+
+    # oscillation estimation
+    if not lockin_cycled and estimation.cycle is not None:
         axes.fill(
             estimation.cycle[0, :],
             estimation.cycle[1, :],
             "white",
         )
-
-    # sample locked-in trajectory
-    axes.plot(
-        estimation.trajectory[0, :],
-        estimation.trajectory[1, :],
-        color=LINE_BLUE,
-        linewidth=1,
-    )
-
-    # oscillation bound
-    if estimation.cycle is not None:
         axes.plot(
             estimation.cycle[0, :],
             estimation.cycle[1, :],
@@ -130,15 +140,6 @@ def draw_comparison_portrait(system_left, system_right, t_max, axes):
             linewidth=2,
         )
 
-    # stationary points
-    # axes.plot(
-    #     [0.0, 0.0],
-    #     [system_left.z_minus, system_left.z_plus],
-    #     linestyle="",
-    #     marker="o",
-    #     markersize=4,
-    #     color="black",
-    # )
     axes.plot(
         [-pi, -pi, pi, pi],
         [
