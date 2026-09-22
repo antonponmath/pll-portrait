@@ -11,6 +11,7 @@ from pll_portrait.models import (
 )
 from pll_portrait.simulation import simulate
 
+EPS = 0.001
 
 def main():
     # system = LinearPendulum()
@@ -24,42 +25,44 @@ def main():
     exclusion_upper = simulate(
         comparison_right,
         t_max=-t_max,
-        initial_state=[pi - 0.01, comparison_left.z_plus + 0.01],
+        initial_state=[pi - EPS, comparison_left.z_plus + EPS],
     )
     exclusion_lower = simulate(
         comparison_right,
         t_max=-t_max,
-        initial_state=[-pi + 0.01, comparison_left.z_minus - 0.01],
+        initial_state=[-pi + EPS, comparison_left.z_minus - EPS],
     )
     lockin_upper = simulate(
         comparison_left,
         t_max=-t_max,
-        initial_state=[pi - 0.01, comparison_left.z_minus + 0.01],
+        initial_state=[pi - EPS, comparison_left.z_minus + EPS],
     )
     lockin_lower = simulate(
         comparison_left,
         t_max=-t_max,
-        initial_state=[-pi + 0.01, comparison_left.z_plus - 0.01],
+        initial_state=[-pi + EPS, comparison_left.z_plus - EPS],
     )
     estimation = simulate(
         comparison_left,
         t_max=t_max,
-        initial_state=[-pi + 0.01, lockin_lower.trajectory[1, -1] / 2.0]
+        initial_state=[-pi + EPS, lockin_lower.trajectory[1, -1] / 2.0]
         if lockin_lower.trajectory[1, -1] > 0
-        else [-pi + 0.01, lockin_upper.trajectory[1, -1] / 2.0],
+        else [-pi + EPS, lockin_upper.trajectory[1, -1] / 2.0],
     )
 
     _, ax = plt.subplots()
+    xlim = 1.1 * pi
+    ylim = -1.1 * min(exclusion_lower.trajectory[1, :])
 
     # exclusion region fill
     ax.fill(
         np.append(exclusion_lower.trajectory[0, :], [pi, -pi]),
-        np.append(exclusion_lower.trajectory[1, :], [-10.0, -10.0]),
+        np.append(exclusion_lower.trajectory[1, :], [-ylim, -ylim]),
         "#fee",
     )
     ax.fill(
         np.append(exclusion_upper.trajectory[0, :], [-pi, pi]),
-        np.append(exclusion_upper.trajectory[1, :], [10.0, 10.0]),
+        np.append(exclusion_upper.trajectory[1, :], [ylim, ylim]),
         "#fee",
     )
 
@@ -118,7 +121,7 @@ def main():
     ax.plot(
         estimation.trajectory[0, :],
         estimation.trajectory[1, :],
-        color="gray",
+        color="#ccf",
         linewidth=1,
     )
 
@@ -154,8 +157,8 @@ def main():
     )
 
     ax.set(
-        xlim=1.1 * pi * np.array([-1, 1]),
-        ylim=1.1 * min(exclusion_lower.trajectory[1, :]) * np.array([1, -1]),
+        xlim=xlim * np.array([-1, 1]),
+        ylim=ylim * np.array([-1, 1]),
     )
     ax.grid()
     plt.show()
