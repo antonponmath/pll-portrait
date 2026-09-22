@@ -1,34 +1,24 @@
-from math import pi
-
-import numpy as np
 from matplotlib import pyplot as plt
 
+from pll_portrait.drawing import draw_comparison_portrait
 from pll_portrait.models import (
+    ComparisonSRFPLL,
     ForcedSRFPLL,
     LinearPendulum,
     VanDerPol,
-    ComparisonSRFPLL,
 )
-from pll_portrait.simulation import simulate
 
 
 def main():
-    # system = LinearPendulum()
-    # system = VanDerPol()
-    # system = ForcedSRFPLL()
-    system = ComparisonSRFPLL(left_or_right="left")
-
-    t_max = 10
-    initial_state = [0.0, 0.1]
-    result = simulate(system, t_max=t_max, initial_state=initial_state)
-
     _, ax = plt.subplots()
-    ax.plot(result.trajectory[0, :], result.trajectory[1, :], color="blue", linewidth=1)
-    # if result.cycle is not None:
-    #     ax.plot(result.cycle[0, :], result.cycle[1, :], color="red", linewidth=2)
+    draw_comparison_portrait(
+        ComparisonSRFPLL(left_or_right="left", unbalance_factor=0.15),
+        ComparisonSRFPLL(left_or_right="right", unbalance_factor=0.15),
+        30.0,
+        ax,
+    )
 
-    ax.plot(initial_state[0], initial_state[1], marker="o", color="black")
-    ax.grid()
+    ax.set_box_aspect(1)
     plt.show()
 
 

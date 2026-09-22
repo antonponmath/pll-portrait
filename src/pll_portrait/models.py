@@ -43,7 +43,7 @@ class LinearPendulum(System):
 class VanDerPol(System):
     """Van der Pol oscillator for testing."""
 
-    __slots__ = "damping"
+    __slots__ = ("damping",)
 
     def __init__(self, *, damping=1.0):
         self.damping = damping
@@ -109,9 +109,9 @@ class ComparisonSRFPLL(ForcedSRFPLL):
         "__mu_max",
         "__mu_min",
         "__z_bottom",
-        "__z_minus",
-        "__z_plus",
         "__z_top",
+        "z_minus",
+        "z_plus",
     )
 
     def __init__(
@@ -138,8 +138,8 @@ class ComparisonSRFPLL(ForcedSRFPLL):
                 raise ValueError("Comparison system must be left or right.")
         self.__C1 = kp * positive_sequence_amplitude / frequency
         self.__C2 = ki * positive_sequence_amplitude / frequency**2
-        self.__z_minus = -2 * unbalance_factor / (1 + unbalance_factor)
-        self.__z_plus = 2 * unbalance_factor / (1 - unbalance_factor)
+        self.z_minus = -2 * unbalance_factor / (1 + unbalance_factor)
+        self.z_plus = 2 * unbalance_factor / (1 - unbalance_factor)
         self.__z_top = 2 * (1 + 2 * unbalance_factor) / (1 - unbalance_factor)
         self.__z_bottom = 2 * (1 - 2 * unbalance_factor) / (1 + unbalance_factor)
         self.__mu_min = 1 - unbalance_factor
@@ -150,14 +150,14 @@ class ComparisonSRFPLL(ForcedSRFPLL):
         b, z = state
         if self.__left_right_sign * sin(b) < 0:
             G = min(
-                (z - self.__z_minus) / self.__mu_max,
-                (z - self.__z_plus) / self.__mu_min,
+                (z - self.z_minus) / self.__mu_max,
+                (z - self.z_plus) / self.__mu_min,
             )
         else:
             if z >= self.__z_top:
-                G = (z - self.__z_plus) * self.__mu_max
+                G = (z - self.z_plus) * self.__mu_max
             elif z < self.__z_bottom:
-                G = (z - self.__z_minus) * self.__mu_min
+                G = (z - self.z_minus) * self.__mu_min
             else:
                 G = 2 / 3 * sqrt((z + 1) ** 3 / 3 / (1 - self.unbalance_factor**2))
         db = -self.__C1 * sin(b) + G
