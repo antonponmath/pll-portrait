@@ -50,6 +50,20 @@ def main():
     )
 
     _, ax = plt.subplots()
+
+    # exclusion region fill
+    ax.fill(
+        np.append(exclusion_lower.trajectory[0, :], [pi, -pi]),
+        np.append(exclusion_lower.trajectory[1, :], [-10.0, -10.0]),
+        "#fee",
+    )
+    ax.fill(
+        np.append(exclusion_upper.trajectory[0, :], [-pi, pi]),
+        np.append(exclusion_upper.trajectory[1, :], [10.0, 10.0]),
+        "#fee",
+    )
+
+    # exclusion region bounds
     ax.plot(
         exclusion_upper.trajectory[0, :],
         exclusion_upper.trajectory[1, :],
@@ -62,12 +76,28 @@ def main():
         color="red",
         linewidth=2,
     )
+
+    # lock-in domain fill
+    if lockin_lower.trajectory[0, -1] > 0:
+        ax.fill(
+            np.append(lockin_lower.trajectory[0, :], lockin_upper.trajectory[0, :]),
+            np.append(lockin_lower.trajectory[1, :], lockin_upper.trajectory[1, :]),
+            "#eef",
+        )
+    else:
+        ax.fill(
+            lockin_lower.trajectory[0, :],
+            lockin_lower.trajectory[1, :],
+            "#eef",
+        )
+
+    # lock-in domain bounds
     ax.plot(
         lockin_upper.trajectory[0, :],
         lockin_upper.trajectory[1, :],
         color="blue",
         linewidth=2,
-        linestyle=":" if lockin_lower.trajectory[0, -1] < 0 else "-",
+        linestyle="-" if lockin_lower.trajectory[0, -1] > 0 else ":",
     )
     ax.plot(
         lockin_lower.trajectory[0, :],
@@ -75,12 +105,24 @@ def main():
         color="blue",
         linewidth=2,
     )
+
+    # oscillation fill
+    if estimation.cycle is not None:
+        ax.fill(
+            estimation.cycle[0, :],
+            estimation.cycle[1, :],
+            "#efe",
+        )
+
+    # sample locked-in trajectory
     ax.plot(
         estimation.trajectory[0, :],
         estimation.trajectory[1, :],
         color="gray",
         linewidth=1,
     )
+
+    # oscillation bound
     if estimation.cycle is not None:
         ax.plot(
             estimation.cycle[0, :],
@@ -89,6 +131,7 @@ def main():
             linewidth=2,
         )
 
+    # stationary points
     ax.plot(
         [0.0, 0.0],
         [comparison_left.z_minus, comparison_left.z_plus],
