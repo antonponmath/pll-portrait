@@ -1,4 +1,4 @@
-from math import pi
+from math import pi, copysign
 
 import numpy as np
 from numpy import linalg as LA
@@ -6,7 +6,7 @@ from scipy.integrate import solve_ivp
 
 
 class SimulationResult:
-    __slots__ = ("solution", "trajectory", "cycle")
+    __slots__ = ("cycle", "solution", "trajectory")
 
     def __init__(self, *, solution, trajectory, cycle):
         self.solution = solution
@@ -56,9 +56,15 @@ def simulate(
         dense_output=True,
     )
 
-    # TODO adapt to inverse time integration
+    def time_range(t0, t1):
+        # allows t1 < t0 and includes t1
+        return np.append(
+            t0 + np.arange(0.0, abs(t1 - t0), system.max_step) * copysign(1.0, t1 - t0),
+            t1,
+        )
+
     t_final = solution.t[-1]
-    trajectory_times = np.append(np.arange(0.0, t_final, system.max_step), t_final)
+    trajectory_times = time_range(0, t_final)
     trajectory = solution.sol(trajectory_times)
 
     cycle = None
@@ -69,19 +75,19 @@ def simulate(
         cycle = None
     elif is_forced:
         # check if there is a cycle at forcing period
-        t1 = t_final - system.forcing_period
+        t1 = t_final - copysign(system.forcing_period, t_final)
         t2 = t_final
         y1 = solution.sol(t1)
         y2 = solution.sol(t2)
         if LA.norm(y1 - y2) < cycle_tolerance:
-            cycle_times = np.append(np.arange(t1, t2, system.max_step), t2)
+            cycle_times = time_range(t1, t2)
             cycle = solution.sol(cycle_times)
     elif cycle_tolerance is not None:
         # check if there is a cycle between crossings
         t = solution.t_events[0]
         y = solution.y_events[0]
         if len(t) > 1 and abs(y[-1, 0] - y[-2, 0]) < cycle_tolerance:
-            cycle_times = np.append(np.arange(t[-2], t[-1], system.max_step), t[-1])
+            cycle_times = time_range(t[-2], t[-1])
             cycle = solution.sol(cycle_times)
 
     return SimulationResult(solution=solution, trajectory=trajectory, cycle=cycle)
