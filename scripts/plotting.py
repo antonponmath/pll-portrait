@@ -1,184 +1,24 @@
-from math import pi
-
-import numpy as np
 from matplotlib import pyplot as plt
 
+from pll_portrait.drawing import draw_comparison_portrait
 from pll_portrait.models import (
     ComparisonSRFPLL,
     ForcedSRFPLL,
     LinearPendulum,
     VanDerPol,
 )
-from pll_portrait.simulation import simulate
-
-EPS = 0.001
 
 
 def main():
-    # system = LinearPendulum()
-    # system = VanDerPol()
-    # system = ForcedSRFPLL()
-    comparison_left = ComparisonSRFPLL(left_or_right="left", unbalance_factor=0.15)
-    comparison_right = ComparisonSRFPLL(left_or_right="right", unbalance_factor=0.15)
-
-    T = 30  # maximal integration time
-
-    exclusion_upper = simulate(
-        comparison_right,
-        t_max=-T,
-        initial_state=[pi - EPS, comparison_left.z_plus + EPS],
-    )
-    exclusion_lower = simulate(
-        comparison_right,
-        t_max=-T,
-        initial_state=[-pi + EPS, comparison_left.z_minus - EPS],
-    )
-    lockin_upper = simulate(
-        comparison_left,
-        t_max=-T,
-        initial_state=[pi - EPS, comparison_left.z_minus + EPS],
-    )
-    lockin_lower = simulate(
-        comparison_left,
-        t_max=-T,
-        initial_state=[-pi + EPS, comparison_left.z_plus - EPS],
-    )
-    estimation = simulate(
-        comparison_left,
-        t_max=T,
-        initial_state=[-pi + EPS, lockin_lower.trajectory[1, -1] / 2.0]
-        if lockin_lower.trajectory[1, -1] > 0
-        else [-pi + EPS, lockin_upper.trajectory[1, -1] / 2.0],
-    )
-
     _, ax = plt.subplots()
-    xlim = 1.15 * pi
-    ylim = -1.1 * min(exclusion_lower.trajectory[1, :])
-
-    for xshift in [-2 * pi, 0, 2 * pi]:
-        # exclusion region fill
-        ax.fill(
-            np.append(exclusion_lower.trajectory[0, :], [pi, -pi]) + xshift,
-            np.append(exclusion_lower.trajectory[1, :], [-ylim, -ylim]),
-            "#fee",
-        )
-        ax.fill(
-            np.append(exclusion_upper.trajectory[0, :], [-pi, pi]) + xshift,
-            np.append(exclusion_upper.trajectory[1, :], [ylim, ylim]),
-            "#fee",
-        )
-
-        # exclusion region bounds
-        ax.plot(
-            exclusion_upper.trajectory[0, :] + xshift,
-            exclusion_upper.trajectory[1, :],
-            color="red",
-            linewidth=2,
-        )
-        ax.plot(
-            exclusion_lower.trajectory[0, :] + xshift,
-            exclusion_lower.trajectory[1, :],
-            color="red",
-            linewidth=2,
-        )
-
-        # lock-in domain fill
-        if lockin_lower.trajectory[0, -1] > 0:
-            ax.fill(
-                np.append(lockin_lower.trajectory[0, :], lockin_upper.trajectory[0, :])
-                + xshift,
-                np.append(lockin_lower.trajectory[1, :], lockin_upper.trajectory[1, :]),
-                "#eef",
-            )
-        else:
-            ax.fill(
-                lockin_lower.trajectory[0, :] + xshift,
-                lockin_lower.trajectory[1, :],
-                "#eef",
-            )
-
-        # lock-in domain bounds
-        ax.plot(
-            lockin_upper.trajectory[0, :] + xshift,
-            lockin_upper.trajectory[1, :],
-            color="blue",
-            linewidth=2,
-            linestyle="-" if lockin_lower.trajectory[0, -1] > 0 else ":",
-        )
-        ax.plot(
-            lockin_lower.trajectory[0, :] + xshift,
-            lockin_lower.trajectory[1, :],
-            color="blue",
-            linewidth=2,
-        )
-
-    # oscillation fill
-    if estimation.cycle is not None:
-        ax.fill(
-            estimation.cycle[0, :],
-            estimation.cycle[1, :],
-            "#efe",
-        )
-
-    # sample locked-in trajectory
-    ax.plot(
-        estimation.trajectory[0, :],
-        estimation.trajectory[1, :],
-        color="#ccf",
-        linewidth=1,
+    draw_comparison_portrait(
+        ComparisonSRFPLL(left_or_right="left", unbalance_factor=0.15),
+        ComparisonSRFPLL(left_or_right="right", unbalance_factor=0.15),
+        30.0,
+        ax,
     )
 
-    # oscillation bound
-    if estimation.cycle is not None:
-        ax.plot(
-            estimation.cycle[0, :],
-            estimation.cycle[1, :],
-            color="green",
-            linewidth=2,
-        )
-
-    # stationary points
-    ax.plot(
-        [0.0, 0.0],
-        [comparison_left.z_minus, comparison_left.z_plus],
-        linestyle="",
-        marker="o",
-        markersize=4,
-        color="black",
-    )
-    ax.plot(
-        [-pi, -pi, pi, pi],
-        [
-            comparison_left.z_minus,
-            comparison_left.z_plus,
-            comparison_left.z_minus,
-            comparison_left.z_plus,
-        ],
-        linestyle="",
-        marker="o",
-        markerfacecolor="white",
-        markeredgecolor="black",
-    )
-
-    ax.text(
-        0.0,
-        max(lockin_upper.trajectory[1, :]) / 2.0,
-        "lock-in domain\nestimation",
-        horizontalalignment="center",
-        color="blue",
-        family="monospace",
-        size=10,
-    )
-    ax.set_xlim(xlim * np.array([-1, 1]))
-    ax.set_ylim(ylim * np.array([-1, 1]))
-    ax.set_xticks(
-        [-pi, 0, pi], labels=["$-\\pi$", "$0$", "$\\pi$"], usetex=True, size=12
-    )
-    ax.set_yticks(np.linspace(-ylim, ylim, 7), labels=[])
     ax.set_box_aspect(1)
-    # ax.set_xlabel("phase error", family='serif', size=12)
-    # ax.set_ylabel("frequency error", family='serif', size=12)
-    ax.grid(color="#ddd")
     plt.show()
 
 
