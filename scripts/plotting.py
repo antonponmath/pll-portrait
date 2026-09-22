@@ -1,4 +1,4 @@
-from matplotlib import pyplot as plt
+import matplotlib.pyplot as plt
 
 from pll_portrait.drawing import draw_comparison_portrait
 from pll_portrait.models import (
@@ -10,7 +10,7 @@ from pll_portrait.models import (
 
 
 def main():
-    _, ax = plt.subplots()
+    _, ax = plt.subplots(figsize=[6, 6])
     draw_comparison_portrait(
         ComparisonSRFPLL(left_or_right="left", unbalance_factor=0.15),
         ComparisonSRFPLL(left_or_right="right", unbalance_factor=0.15),
