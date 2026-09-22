@@ -1,7 +1,6 @@
 from math import pi
 
 import numpy as np
-import matplotlib
 from matplotlib import pyplot as plt
 
 from pll_portrait.models import (
@@ -56,60 +55,62 @@ def main():
     xlim = 1.1 * pi
     ylim = -1.1 * min(exclusion_lower.trajectory[1, :])
 
-    # exclusion region fill
-    ax.fill(
-        np.append(exclusion_lower.trajectory[0, :], [pi, -pi]),
-        np.append(exclusion_lower.trajectory[1, :], [-ylim, -ylim]),
-        "#fee",
-    )
-    ax.fill(
-        np.append(exclusion_upper.trajectory[0, :], [-pi, pi]),
-        np.append(exclusion_upper.trajectory[1, :], [ylim, ylim]),
-        "#fee",
-    )
-
-    # exclusion region bounds
-    ax.plot(
-        exclusion_upper.trajectory[0, :],
-        exclusion_upper.trajectory[1, :],
-        color="red",
-        linewidth=2,
-    )
-    ax.plot(
-        exclusion_lower.trajectory[0, :],
-        exclusion_lower.trajectory[1, :],
-        color="red",
-        linewidth=2,
-    )
-
-    # lock-in domain fill
-    if lockin_lower.trajectory[0, -1] > 0:
+    for xshift in [-2 * pi, 0, 2 * pi]:
+        # exclusion region fill
         ax.fill(
-            np.append(lockin_lower.trajectory[0, :], lockin_upper.trajectory[0, :]),
-            np.append(lockin_lower.trajectory[1, :], lockin_upper.trajectory[1, :]),
-            "#eef",
+            np.append(exclusion_lower.trajectory[0, :], [pi, -pi]) + xshift,
+            np.append(exclusion_lower.trajectory[1, :], [-ylim, -ylim]),
+            "#fee",
         )
-    else:
         ax.fill(
-            lockin_lower.trajectory[0, :],
+            np.append(exclusion_upper.trajectory[0, :], [-pi, pi]) + xshift,
+            np.append(exclusion_upper.trajectory[1, :], [ylim, ylim]),
+            "#fee",
+        )
+
+        # exclusion region bounds
+        ax.plot(
+            exclusion_upper.trajectory[0, :] + xshift,
+            exclusion_upper.trajectory[1, :],
+            color="red",
+            linewidth=2,
+        )
+        ax.plot(
+            exclusion_lower.trajectory[0, :] + xshift,
+            exclusion_lower.trajectory[1, :],
+            color="red",
+            linewidth=2,
+        )
+
+        # lock-in domain fill
+        if lockin_lower.trajectory[0, -1] > 0:
+            ax.fill(
+                np.append(lockin_lower.trajectory[0, :], lockin_upper.trajectory[0, :])
+                + xshift,
+                np.append(lockin_lower.trajectory[1, :], lockin_upper.trajectory[1, :]),
+                "#eef",
+            )
+        else:
+            ax.fill(
+                lockin_lower.trajectory[0, :] + xshift,
+                lockin_lower.trajectory[1, :],
+                "#eef",
+            )
+
+        # lock-in domain bounds
+        ax.plot(
+            lockin_upper.trajectory[0, :] + xshift,
+            lockin_upper.trajectory[1, :],
+            color="blue",
+            linewidth=2,
+            linestyle="-" if lockin_lower.trajectory[0, -1] > 0 else ":",
+        )
+        ax.plot(
+            lockin_lower.trajectory[0, :] + xshift,
             lockin_lower.trajectory[1, :],
-            "#eef",
+            color="blue",
+            linewidth=2,
         )
-
-    # lock-in domain bounds
-    ax.plot(
-        lockin_upper.trajectory[0, :],
-        lockin_upper.trajectory[1, :],
-        color="blue",
-        linewidth=2,
-        linestyle="-" if lockin_lower.trajectory[0, -1] > 0 else ":",
-    )
-    ax.plot(
-        lockin_lower.trajectory[0, :],
-        lockin_lower.trajectory[1, :],
-        color="blue",
-        linewidth=2,
-    )
 
     # oscillation fill
     if estimation.cycle is not None:
@@ -142,6 +143,7 @@ def main():
         [comparison_left.z_minus, comparison_left.z_plus],
         linestyle="",
         marker="o",
+        markersize=4,
         color="black",
     )
     ax.plot(
@@ -158,6 +160,15 @@ def main():
         markeredgecolor="black",
     )
 
+    ax.text(
+        0.0,
+        max(lockin_upper.trajectory[1, :]) / 2.0,
+        "lock-in domain\nestimation",
+        horizontalalignment="center",
+        color="blue",
+        family="monospace",
+        size=10,
+    )
     ax.set_xlim(xlim * np.array([-1, 1]))
     ax.set_ylim(ylim * np.array([-1, 1]))
     ax.set_xticks([-pi, 0, pi], labels=["$-\\pi$", "0", "$\\pi$"], usetex=True, size=12)
@@ -165,7 +176,7 @@ def main():
     ax.set_box_aspect(1)
     # ax.set_xlabel("phase error", family='serif', size=12)
     # ax.set_ylabel("frequency error", family='serif', size=12)
-    ax.grid()
+    ax.grid(color="#ddd")
     plt.show()
 
 
