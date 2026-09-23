@@ -154,16 +154,40 @@ def draw_comparison_portrait(system_left, system_right, t_max, axes):
         markeredgecolor="black",
     )
 
-    axes.text(
-        0.0,
-        max(lockin_upper.trajectory[1, :]) / 2.0,
-        "guaranteed lock-in",
-        horizontalalignment="center",
-        verticalalignment="center",
-        color=BLUE,
-        family="monospace",
-        size=10,
-    )
+    if lockin_cycled:
+        axes.text(
+            0.0,
+            0.0,
+            "phase lock\nmay be lost",
+            horizontalalignment="center",
+            verticalalignment="center",
+            color=BLUE,
+            family="monospace",
+            size=10,
+        )
+    elif estimation.cycle is None:
+        axes.text(
+            0.0,
+            max(lockin_upper.trajectory[1, :]) / 2.0,
+            "guaranteed\nlock-in",
+            horizontalalignment="center",
+            # verticalalignment="center",
+            color=BLUE,
+            family="monospace",
+            size=10,
+        )
+    else:
+        axes.text(
+            0.0,
+            max(max(lockin_upper.trajectory[1, :]) / 2.0, max(estimation.cycle[1,:])*1.05),
+            "guaranteed\nlock-in",
+            horizontalalignment="center",
+            # verticalalignment="center",
+            color=BLUE,
+            family="monospace",
+            size=10,
+        )
+
     axes.text(
         0.0,
         (max(slipping_upper.trajectory[1, :]) + ylim) / 2.0,
