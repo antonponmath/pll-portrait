@@ -110,6 +110,7 @@ class ComparisonSRFPLL(ForcedSRFPLL):
         "__mu_min",
         "__z_bottom",
         "__z_top",
+        "not_switching",
         "z_minus",
         "z_plus",
     )
@@ -145,6 +146,16 @@ class ComparisonSRFPLL(ForcedSRFPLL):
         self.__mu_min = 1 - unbalance_factor
         self.__mu_max = 1 + unbalance_factor
         self.max_step = 0.1
+        # constructing a narrow ellipse around the switching interval
+        z_mid = (self.z_minus + self.z_plus) / 2
+        z_dif = self.z_plus - z_mid
+        squeeze = 1e6
+        coef1 = 1 / (squeeze + 1)
+        coef2 = z_dif**2 / squeeze
+        self.not_switching = lambda state: (
+            # is positive if state is far from the switching interval
+            state[0] ** 2 + coef1 * (state[1] - z_mid) ** 2 - coef2
+        )
 
     def __call__(self, _time, state):
         b, z = state

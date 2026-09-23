@@ -36,6 +36,15 @@ def simulate(
     else:
         events = [crossing_upward]
 
+    if hasattr(system, "not_switching"):
+
+        def switching_event(_t, y):
+            return system.not_switching(y)
+
+        switching_event.terminal = True
+
+        events.append(switching_event)
+
     if escape_bounds is not None:
 
         def escape_event_left(_t, y):
