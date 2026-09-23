@@ -36,10 +36,10 @@ def simulate(
     else:
         events = [crossing_upward]
 
-    if hasattr(system, "not_switching"):
+    if hasattr(system, "not_sliding"):
 
         def switching_event(_t, y):
-            return system.not_switching(y)
+            return system.not_sliding(y)
 
         switching_event.terminal = True
 

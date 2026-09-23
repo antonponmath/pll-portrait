@@ -110,7 +110,7 @@ class ComparisonSRFPLL(ForcedSRFPLL):
         "__mu_min",
         "__z_bottom",
         "__z_top",
-        "not_switching",
+        "not_sliding",
         "z_minus",
         "z_plus",
     )
@@ -152,7 +152,7 @@ class ComparisonSRFPLL(ForcedSRFPLL):
         squeeze = 1e6
         coef1 = 1 / (squeeze + 1)
         coef2 = z_dif**2 / squeeze
-        self.not_switching = lambda state: (
+        self.not_sliding = lambda state: (
             # is positive if state is far from the switching interval
             state[0] ** 2 + coef1 * (state[1] - z_mid) ** 2 - coef2
         )
