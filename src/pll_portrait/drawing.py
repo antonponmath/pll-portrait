@@ -1,88 +1,91 @@
 from math import pi
-
 import numpy as np
+from matplotlib.axes import Axes
 
-from pll_portrait.simulation import simulate
+from .models import System
+from .simulation import simulate
 
 EPS = 0.001
 
-RED = "#b70404"
-GREEN = "#069a8e"
-BLUE = "#2155cd"
-FILL_RED = "#f1cdcd"
-FILL_GREEN = "#b4e1dd"
-FILL_BLUE = "#d3ddf5"
-LINE_BLUE = "#a6bbeb"
-GRID_COLOR = "#ccc"
+COL_SLIP_BORDER = "#b70404"
+COL_SLIP_FILL = "#f1cdcd"
+COL_ESTIM_BORDER = "#069a8e"
+COL_ESTIM_FILL = "#b4e1dd"
+COL_LOCKIN_BORDER = "#2155cd"
+COL_LOCKIN_TRAJ = "#a6bbeb"
+COL_LOCKIN_FILL = "#d3ddf5"
+COL_GRID = "#ccc"
 
 
-def draw_comparison_portrait(system_left, system_right, t_max, axes):
+def draw_comparison_portrait(
+    system_left: System, system_right: System, t_max: float, axes: Axes
+) -> None:
     slipping_upper = simulate(
         system_right,
         t_max=-t_max,
-        initial_state=[pi - EPS, system_left.z_plus + EPS],
+        initial_state=(pi - EPS, system_left.z_plus + EPS),
     )
     slipping_lower = simulate(
         system_right,
         t_max=-t_max,
-        initial_state=[-pi + EPS, system_left.z_minus - EPS],
+        initial_state=(-pi + EPS, system_left.z_minus - EPS),
     )
     lockin_upper = simulate(
         system_left,
         t_max=-t_max,
-        initial_state=[pi - EPS, system_left.z_minus + EPS],
+        initial_state=(pi - EPS, system_left.z_minus + EPS),
     )
     lockin_lower = simulate(
         system_left,
         t_max=-t_max,
-        initial_state=[-pi + EPS, system_left.z_plus - EPS],
+        initial_state=(-pi + EPS, system_left.z_plus - EPS),
     )
 
-    lockin_wrapped = lockin_lower.escaped and lockin_lower.trajectory[0, -1] < 0
-    lockin_cycled = not lockin_lower.escaped
+    lockin_wrapped: bool = lockin_lower.escaped and lockin_lower.trajectory[0, -1] < 0
+    lockin_cycled: bool = not lockin_lower.escaped
 
     if not lockin_cycled:
         estimation = simulate(
             system_left,
             t_max=t_max,
-            initial_state=[
+            initial_state=(
                 -pi + EPS,
                 (lockin_lower.trajectory[1, -1] + system_left.z_plus) / 2.0,
-            ]
+            )
             if lockin_wrapped
-            else [
+            else (
                 -pi + EPS,
                 (lockin_upper.trajectory[1, -1] + system_left.z_plus) / 2.0,
-            ],
+            ),
         )
 
-    xlim = 1.15 * pi
-    ylim = -1.2 * min(slipping_lower.trajectory[1, :])
+    xlim: float = 1.15 * pi
+    ylim: float = -1.2 * min(slipping_lower.trajectory[1, :])
 
     for xshift in [-2 * pi, 0, 2 * pi]:
         # slipping region fill
         axes.fill(
             np.append(slipping_lower.trajectory[0, :], [pi, -pi]) + xshift,
             np.append(slipping_lower.trajectory[1, :], [-ylim, -ylim]),
-            FILL_RED,
+            COL_SLIP_FILL,
         )
         axes.fill(
             np.append(slipping_upper.trajectory[0, :], [-pi, pi]) + xshift,
             np.append(slipping_upper.trajectory[1, :], [ylim, ylim]),
-            FILL_RED,
+            COL_SLIP_FILL,
         )
 
         # slipping region bounds
         axes.plot(
             slipping_upper.trajectory[0, :] + xshift,
             slipping_upper.trajectory[1, :],
-            color=RED,
+            color=COL_SLIP_BORDER,
             linewidth=2,
         )
         axes.plot(
             slipping_lower.trajectory[0, :] + xshift,
             slipping_lower.trajectory[1, :],
-            color=RED,
+            color=COL_SLIP_BORDER,
             linewidth=2,
         )
 
@@ -92,28 +95,32 @@ def draw_comparison_portrait(system_left, system_right, t_max, axes):
                 axes.fill(
                     lockin_lower.trajectory[0, :] + xshift,
                     lockin_lower.trajectory[1, :],
-                    FILL_BLUE,
+                    COL_LOCKIN_FILL,
                 )
             else:
                 axes.fill(
-                    np.append(lockin_lower.trajectory[0, :], lockin_upper.trajectory[0, :])
+                    np.append(
+                        lockin_lower.trajectory[0, :], lockin_upper.trajectory[0, :]
+                    )
                     + xshift,
-                    np.append(lockin_lower.trajectory[1, :], lockin_upper.trajectory[1, :]),
-                    FILL_BLUE,
+                    np.append(
+                        lockin_lower.trajectory[1, :], lockin_upper.trajectory[1, :]
+                    ),
+                    COL_LOCKIN_FILL,
                 )
 
         # lock-in domain bounds
         axes.plot(
             lockin_upper.trajectory[0, :] + xshift,
             lockin_upper.trajectory[1, :],
-            color=BLUE,
+            color=COL_LOCKIN_BORDER,
             linewidth=2,
             linestyle=":" if lockin_wrapped or lockin_cycled else "-",
         )
         axes.plot(
             lockin_lower.trajectory[0, :] + xshift,
             lockin_lower.trajectory[1, :],
-            color=BLUE,
+            color=COL_LOCKIN_BORDER,
             linewidth=2,
         )
 
@@ -122,7 +129,7 @@ def draw_comparison_portrait(system_left, system_right, t_max, axes):
         axes.plot(
             estimation.trajectory[0, :],
             estimation.trajectory[1, :],
-            color=LINE_BLUE,
+            color=COL_LOCKIN_TRAJ,
             linewidth=1,
         )
 
@@ -136,7 +143,7 @@ def draw_comparison_portrait(system_left, system_right, t_max, axes):
         axes.plot(
             estimation.cycle[0, :],
             estimation.cycle[1, :],
-            color=BLUE,
+            color=COL_LOCKIN_BORDER,
             linewidth=2,
         )
 
@@ -161,7 +168,7 @@ def draw_comparison_portrait(system_left, system_right, t_max, axes):
             "phase lock\nmay be lost",
             horizontalalignment="center",
             verticalalignment="center",
-            color=BLUE,
+            color=COL_LOCKIN_BORDER,
             family="monospace",
             size=10,
         )
@@ -172,18 +179,21 @@ def draw_comparison_portrait(system_left, system_right, t_max, axes):
             "guaranteed\nlock-in",
             horizontalalignment="center",
             # verticalalignment="center",
-            color=BLUE,
+            color=COL_LOCKIN_BORDER,
             family="monospace",
             size=10,
         )
     else:
         axes.text(
             0.0,
-            max(max(lockin_upper.trajectory[1, :]) / 2.0, max(estimation.cycle[1,:])*1.05),
+            max(
+                max(lockin_upper.trajectory[1, :]) / 2.0,
+                max(estimation.cycle[1, :]) * 1.05,
+            ),
             "guaranteed\nlock-in",
             horizontalalignment="center",
             # verticalalignment="center",
-            color=BLUE,
+            color=COL_LOCKIN_BORDER,
             family="monospace",
             size=10,
         )
@@ -194,14 +204,13 @@ def draw_comparison_portrait(system_left, system_right, t_max, axes):
         "guaranteed slipping",
         horizontalalignment="center",
         verticalalignment="center",
-        color=RED,
+        color=COL_SLIP_BORDER,
         family="monospace",
         size=10,
     )
-    axes.set_xlim(xlim * np.array([-1, 1]))
-    axes.set_ylim(ylim * np.array([-1, 1]))
+    axes.set(xlim=(-xlim, xlim), ylim=(-ylim, ylim))
     axes.set_xticks(
         [-pi, 0, pi], labels=["$-\\pi$", "$0$", "$\\pi$"], usetex=True, size=12
     )
     axes.set_yticks(np.linspace(-ylim, ylim, 7), labels=[])
-    axes.grid(color=GRID_COLOR)
+    axes.grid(color=COL_GRID)

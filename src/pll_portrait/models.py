@@ -1,27 +1,33 @@
-from math import pi, sin, cos, sqrt
+from dataclasses import dataclass, field
+from math import cos, pi, sin, sqrt
+
+type PlanarState = tuple[float, float]
 
 
+@dataclass(kw_only=True)
 class System:
-    __slots__ = ("forcing_period", "max_step")
+    forcing_period: float = 0.0
+    max_step: float = field(init=False)
 
-    def __call__(self, time, state):
+    def is_forced(self) -> bool: return self.forcing_period > 0.0
+
+    def is_sliding(self, state: PlanarState) -> float: return -1.0
+
+    def __call__(self, time: float, state: PlanarState) -> PlanarState:
         raise NotImplementedError(
             f"Right-hand side undefined for {type(self).__name__}."
         )
 
 
+@dataclass(kw_only=True)
 class LinearPendulum(System):
     """Linear pendulum for testing."""
 
-    __slots__ = (
-        "damping",
-        "stiffness",
-    )
+    stiffness: float = 1.0
+    damping: float = 1.0
 
-    def __init__(self, *, stiffness=1.0, damping=1.0):
-        self.stiffness = stiffness
-        self.damping = damping
-        D = damping**2 - 4 * stiffness  # discriminant
+    def __post_init__(self) -> None:
+        D = self.damping**2 - 4 * self.stiffness  # discriminant
         if D < 0:
             # oscillatory case: take 100 samples over one period
             frequency = sqrt(-D) / 2
@@ -33,144 +39,122 @@ class LinearPendulum(System):
             settling_time = 3.0 / convergence_rate  # 3.0 ≈ -ln(0.05)
             self.max_step = settling_time / 100
 
-    def __call__(self, _time, state):
+    def __call__(self, _time: float, state: PlanarState) -> PlanarState:
         x, y = state
         dx = y
         dy = -self.stiffness * x - self.damping * y
-        return [dx, dy]
+        return (dx, dy)
 
 
+@dataclass(kw_only=True)
 class VanDerPol(System):
     """Van der Pol oscillator for testing."""
 
-    __slots__ = ("damping",)
+    damping: float = 1.0
 
-    def __init__(self, *, damping=1.0):
-        self.damping = damping
+    def __post_init__(self) -> None:
         self.max_step = 2 * pi / 100
 
-    def __call__(self, _time, state):
+    def __call__(self, _time: float, state: PlanarState) -> PlanarState:
         x, y = state
         dx = y
         dy = self.damping * (1 - x**2) * y - x
-        return [dx, dy]
+        return (dx, dy)
 
 
-class ForcedSRFPLL(System):
+@dataclass(kw_only=True)
+class MetaSRFPLL(System):
+    """SRF-PLL template to handle basic parameters"""
+
+    frequency: float = 2 * pi * 50.0
+    positive_sequence_amplitude: float = 200.0
+    unbalance_factor: float = 0.1
+    kp: float = 1.0
+    ki: float = 1000.0
+    C1: float = field(init=False)
+    C2: float = field(init=False)
+
+    def __post_init__(self) -> None:
+        self.C1 = self.kp * self.positive_sequence_amplitude / self.frequency
+        self.C2 = self.ki * self.positive_sequence_amplitude / self.frequency**2
+
+
+@dataclass(kw_only=True)
+class ForcedSRFPLL(MetaSRFPLL):
     """SRF-PLL under unbalanced voltage in normalized time"""
 
-    __slots__ = (
-        "__C1",
-        "__C2",
-        "frequency",
-        "ki",
-        "kp",
-        "positive_sequence_amplitude",
-        "unbalance_factor",
-    )
-
-    def __init__(
-        self,
-        *,
-        kp=1,
-        ki=1000,
-        frequency=2 * pi * 50,
-        positive_sequence_amplitude=200,
-        unbalance_factor=0.1,
-    ):
-        self.kp = kp
-        self.ki = ki
-        self.frequency = frequency
-        self.positive_sequence_amplitude = positive_sequence_amplitude
-        self.unbalance_factor = unbalance_factor
-        self.__C1 = kp * positive_sequence_amplitude / frequency
-        self.__C2 = ki * positive_sequence_amplitude / frequency**2
-        self.max_step = 0.1
+    def __post_init__(self) -> None:
+        super().__post_init__()
         self.forcing_period = pi
+        self.max_step = 0.1
 
-    def __call__(self, time, state):
+    def __call__(self, time: float, state: PlanarState) -> PlanarState:
         b, z = state
         mu = sqrt(
             1 + 2 * self.unbalance_factor * cos(2 * time) + self.unbalance_factor**2
         )
         F = 1 - (1 - self.unbalance_factor**2) / mu**2
-        db = -self.__C1 * mu * sin(b) + z + F
-        dz = -self.__C2 * mu * sin(b)
-        return [db, dz]
+        db = -self.C1 * mu * sin(b) + z + F
+        dz = -self.C2 * mu * sin(b)
+        return (db, dz)
 
 
-class ComparisonSRFPLL(ForcedSRFPLL):
+@dataclass(kw_only=True)
+class ComparisonSRFPLL(MetaSRFPLL):
     """Comparison system for the SRF-PLL under unbalanced voltage."""
 
-    __slots__ = (
-        "__C1",
-        "__C2",
-        "__left_right_sign",
-        "__mu_max",
-        "__mu_min",
-        "__z_bottom",
-        "__z_top",
-        "not_sliding",
-        "z_minus",
-        "z_plus",
-    )
+    left_or_right: str = "left"
+    z_minus: float = field(init=False)
+    z_plus: float = field(init=False)
+    z_top: float = field(init=False)
+    z_bottom: float = field(init=False)
+    mu_min: float = field(init=False)
+    mu_max: float = field(init=False)
 
-    def __init__(
-        self,
-        *,
-        kp=1,
-        ki=1000,
-        frequency=2 * pi * 50,
-        positive_sequence_amplitude=200,
-        unbalance_factor=0.1,
-        left_or_right="left",
-    ):
-        self.kp = kp
-        self.ki = ki
-        self.frequency = frequency
-        self.positive_sequence_amplitude = positive_sequence_amplitude
-        self.unbalance_factor = unbalance_factor
-        match left_or_right:
+    def is_sliding(self, state: PlanarState) -> float:
+        # is positive when state is in a narrow ellipse around the sliding interval
+        z_mid = (self.z_minus + self.z_plus) / 2
+        z_dif = self.z_plus - z_mid
+        squeeze = 1e6
+        a1 = z_dif**2 / squeeze
+        a2 = 1 / (squeeze + 1)
+        return a1 - state[0] ** 2 - a2 * (state[1] - z_mid) ** 2
+
+    def __post_init__(self) -> None:
+        super().__post_init__()
+
+        match self.left_or_right:
             case "left":
                 self.__left_right_sign = 1
             case "right":
                 self.__left_right_sign = -1
             case _:
                 raise ValueError("Comparison system must be left or right.")
-        self.__C1 = kp * positive_sequence_amplitude / frequency
-        self.__C2 = ki * positive_sequence_amplitude / frequency**2
-        self.z_minus = -2 * unbalance_factor / (1 + unbalance_factor)
-        self.z_plus = 2 * unbalance_factor / (1 - unbalance_factor)
-        self.__z_top = 2 * (1 + 2 * unbalance_factor) / (1 - unbalance_factor)
-        self.__z_bottom = 2 * (1 - 2 * unbalance_factor) / (1 + unbalance_factor)
-        self.__mu_min = 1 - unbalance_factor
-        self.__mu_max = 1 + unbalance_factor
-        self.max_step = 0.1
-        # constructing a narrow ellipse around the switching interval
-        z_mid = (self.z_minus + self.z_plus) / 2
-        z_dif = self.z_plus - z_mid
-        squeeze = 1e6
-        coef1 = 1 / (squeeze + 1)
-        coef2 = z_dif**2 / squeeze
-        self.not_sliding = lambda state: (
-            # is positive if state is far from the switching interval
-            state[0] ** 2 + coef1 * (state[1] - z_mid) ** 2 - coef2
-        )
 
-    def __call__(self, _time, state):
+        k = self.unbalance_factor
+        self.z_minus = -2 * k / (1 + k)
+        self.z_plus = 2 * k / (1 - k)
+        self.z_top = 2 * (1 + 2 * k) / (1 - k)
+        self.z_bottom = 2 * (1 - 2 * k) / (1 + k)
+        self.mu_min = 1 - k
+        self.mu_max = 1 + k
+        self.max_step = 0.1  # TODO relate max_step to the dynamics
+
+
+    def __call__(self, _time: float, state: PlanarState) -> PlanarState:
         b, z = state
         if self.__left_right_sign * sin(b) < 0:
             G = min(
-                (z - self.z_minus) / self.__mu_max,
-                (z - self.z_plus) / self.__mu_min,
+                (z - self.z_minus) / self.mu_max,
+                (z - self.z_plus) / self.mu_min,
             )
         else:
-            if z >= self.__z_top:
-                G = (z - self.z_plus) * self.__mu_max
-            elif z < self.__z_bottom:
-                G = (z - self.z_minus) * self.__mu_min
+            if z >= self.z_top:
+                G = (z - self.z_plus) * self.mu_max
+            elif z < self.z_bottom:
+                G = (z - self.z_minus) * self.mu_min
             else:
                 G = 2 / 3 * sqrt((z + 1) ** 3 / 3 / (1 - self.unbalance_factor**2))
-        db = -self.__C1 * sin(b) + G
-        dz = -self.__C2 * sin(b)
-        return [db, dz]
+        db = -self.C1 * sin(b) + G
+        dz = -self.C2 * sin(b)
+        return (db, dz)
