@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from math import copysign, pi
-
 import numpy as np
 from scipy.integrate import solve_ivp
 
@@ -19,6 +18,8 @@ class SimulationResult:
 
 def crossing_upward(_t: float, y: PlanarState) -> float:
     return y[1]
+
+
 crossing_upward.direction = +1
 
 
@@ -30,20 +31,24 @@ def simulate(
     escape_bounds: tuple[float, float] | None = (-pi, pi),
 ) -> SimulationResult:
     events = []
-    
+
     if cycle_tolerance > 0.0 and not system.is_forced():
         events.append(crossing_upward)
-    
+
     def sliding_event(_t: float, y: PlanarState) -> float:
         return system.is_sliding(y)
+
     sliding_event.terminal = True
     events.append(sliding_event)
 
     if escape_bounds is not None:
+
         def escape_event_left(_t: float, y: PlanarState) -> float:
             return y[0] - escape_bounds[0]
+
         def escape_event_right(_t: float, y: PlanarState) -> float:
             return y[0] - escape_bounds[1]
+
         escape_event_left.terminal = True
         escape_event_right.terminal = True
         events.append(escape_event_left)
@@ -64,6 +69,7 @@ def simulate(
             t0 + np.arange(0.0, abs(t1 - t0), system.max_step) * copysign(1.0, t1 - t0),
             t1,
         )
+
     t_final: float = solution.t[-1]
     trajectory_times: TimeRange = time_range(0.0, t_final)
     trajectory: Trajectory = solution.sol(trajectory_times)

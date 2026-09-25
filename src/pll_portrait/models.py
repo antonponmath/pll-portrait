@@ -9,9 +9,11 @@ class System:
     forcing_period: float = 0.0
     max_step: float = field(init=False)
 
-    def is_forced(self) -> bool: return self.forcing_period > 0.0
+    def is_forced(self) -> bool:
+        return self.forcing_period > 0.0
 
-    def is_sliding(self, state: PlanarState) -> float: return -1.0
+    def is_sliding(self, state: PlanarState) -> float:
+        return -1.0
 
     def __call__(self, time: float, state: PlanarState) -> PlanarState:
         raise NotImplementedError(
@@ -139,7 +141,6 @@ class ComparisonSRFPLL(MetaSRFPLL):
         self.mu_min = 1 - k
         self.mu_max = 1 + k
         self.max_step = 0.1  # TODO relate max_step to the dynamics
-
 
     def __call__(self, _time: float, state: PlanarState) -> PlanarState:
         b, z = state

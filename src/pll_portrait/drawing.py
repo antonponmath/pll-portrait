@@ -2,7 +2,7 @@ from math import pi
 import numpy as np
 from matplotlib.axes import Axes
 
-from .models import System
+from .models import ComparisonSRFPLL
 from .simulation import simulate
 
 EPS = 0.001
@@ -17,8 +17,11 @@ COL_LOCKIN_FILL = "#d3ddf5"
 COL_GRID = "#ccc"
 
 
-def draw_comparison_portrait(
-    system_left: System, system_right: System, t_max: float, axes: Axes
+def draw_comparison_srf_pll_portrait(
+    system_left: ComparisonSRFPLL,
+    system_right: ComparisonSRFPLL,
+    t_max: float,
+    axes: Axes,
 ) -> None:
     slipping_upper = simulate(
         system_right,
@@ -41,21 +44,23 @@ def draw_comparison_portrait(
         initial_state=(-pi + EPS, system_left.z_plus - EPS),
     )
 
-    lockin_wrapped: bool = lockin_lower.escaped and lockin_lower.trajectory[0, -1] < 0
-    lockin_cycled: bool = not lockin_lower.escaped
+    lockin_wrapped = lockin_lower.escaped and lockin_lower.trajectory[0, -1] < 0
+    lockin_cycled = not lockin_lower.escaped
 
     if not lockin_cycled:
         estimation = simulate(
             system_left,
             t_max=t_max,
             initial_state=(
-                -pi + EPS,
-                (lockin_lower.trajectory[1, -1] + system_left.z_plus) / 2.0,
-            )
-            if lockin_wrapped
-            else (
-                -pi + EPS,
-                (lockin_upper.trajectory[1, -1] + system_left.z_plus) / 2.0,
+                (
+                    -pi + EPS,
+                    (lockin_lower.trajectory[1, -1] + system_left.z_plus) / 2.0,
+                )
+                if lockin_wrapped
+                else (
+                    -pi + EPS,
+                    (lockin_upper.trajectory[1, -1] + system_left.z_plus) / 2.0,
+                )
             ),
         )
 

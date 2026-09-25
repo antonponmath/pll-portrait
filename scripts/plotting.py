@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 
-from pll_portrait.drawing import draw_comparison_portrait
+from pll_portrait.drawing import draw_comparison_srf_pll_portrait
 from pll_portrait.models import (
     ComparisonSRFPLL,
     ForcedSRFPLL,
@@ -11,10 +11,14 @@ from pll_portrait.models import (
 
 def main() -> None:
     _, ax = plt.subplots(figsize=[5, 5])
-    k = 0.22  # unbalance factor
-    draw_comparison_portrait(
-        system_left=ComparisonSRFPLL(left_or_right="left", unbalance_factor=k),
-        system_right=ComparisonSRFPLL(left_or_right="right", unbalance_factor=k),
+    unbalance_factor = 0.22
+    draw_comparison_srf_pll_portrait(
+        system_left=ComparisonSRFPLL(
+            left_or_right="left", unbalance_factor=unbalance_factor
+        ),
+        system_right=ComparisonSRFPLL(
+            left_or_right="right", unbalance_factor=unbalance_factor
+        ),
         t_max=50.0,
         axes=ax,
     )
