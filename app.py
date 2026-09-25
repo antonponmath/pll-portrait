@@ -25,7 +25,7 @@ def draw(unbalance_factor: float) -> Figure:
 
 st.title("Portrait of SRF-PLL")
 
-unbalance_factor_percent = st.slider("Unbalance factor (%)", 0, 30, 1)
+unbalance_factor_percent = st.slider("Unbalance factor (%)", 0, 30, 5)
 
 fig = draw(unbalance_factor_percent / 100.0)
 st.pyplot(fig)
